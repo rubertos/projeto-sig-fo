@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIG FO - Dashboard e Gestão de Projetos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(0.5) sepia(1) saturate(5) hue-rotate(320deg);
+        }
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Cabeçalho Fixo da Aplicação -->
+    <header class="bg-red-800 shadow-lg sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-white">
+                <i class="fas fa-network-wired mr-2"></i>SIG FO
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-white hidden sm:block">Olá, Usuário!</span>
+                <a href="#" class="text-white hover:text-red-200 transition duration-300">
+                    <i class="fas fa-sign-out-alt fa-lg"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="container mx-auto p-4 md:p-8">
+
+        <!-- Mini Dashboard -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Dashboard de Atualizações</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-lg flex items-center">
+                    <div class="bg-red-100 p-4 rounded-full mr-4"><i class="fas fa-folder-open text-red-600 text-2xl"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Total de Projetos para Atualizar</p>
+                        <p id="total-projetos" class="text-2xl font-bold">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg flex items-center">
+                    <div class="bg-green-100 p-4 rounded-full mr-4"><i class="fas fa-plus-circle text-green-600 text-2xl"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Novos (Ano Implantação)</p>
+                        <p id="novos-projetos" class="text-2xl font-bold">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg flex items-center">
+                    <div class="bg-blue-100 p-4 rounded-full mr-4"><i class="fas fa-sync-alt text-blue-600 text-2xl"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Atualizados (Últimos 7 dias)</p>
+                        <p id="atualizados-projetos" class="text-2xl font-bold">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Seção de Consulta -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-red-900 mb-4">Consulta Rápida por Regional (Base Geral)</h2>
+            <div class="flex items-end gap-4">
+                <div class="w-full sm:w-1/2">
+                     <label for="consulta-regional" class="font-semibold text-sm text-gray-700">Selecione a Regional</label>
+                     <select id="consulta-regional" class="w-full mt-1 p-2 border rounded-md bg-white focus:ring-red-500 focus:border-red-500">
+                        <option value="">Selecione...</option>
+                        <option>NO</option>
+                        <option>RJ/ES</option>
+                    </select>
+                </div>
+                <button id="consulta-button" type="button" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 w-full sm:w-auto">
+                    <i class="fas fa-database mr-2"></i>Consultar
+                </button>
+            </div>
+            <div id="consulta-resultados" class="mt-6"></div>
+        </div>
+
+        <!-- Seção de Busca para Edição -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-red-900 mb-4">Editar ou Cadastrar Projeto (Base de Atualização)</h2>
+            <div class="flex flex-col sm:flex-row items-end gap-4">
+                <div class="w-full sm:w-auto flex-grow">
+                    <label for="search-id" class="font-semibold text-sm text-gray-700">Identificador do Projeto</label>
+                    <input type="text" id="search-id" placeholder="Digite o ID para editar ou criar um novo" class="w-full mt-1 p-2 border rounded-md focus:ring-red-500 focus:border-red-500">
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button id="search-button" type="button" class="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 transition-all duration-300 w-full">
+                        <i class="fas fa-search mr-2"></i>Buscar
+                    </button>
+                    <button id="clear-button" type="button" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-all duration-300 w-full">
+                        <i class="fas fa-eraser mr-2"></i>Limpar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <div class="bg-red-700 p-6 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-white"><i class="fas fa-edit mr-3"></i>Formulário de Atualização Semanal</h1>
+                <div id="status-message" class="text-white font-semibold"></div>
+            </div>
+
+            <form id="project-form" class="p-4 md:p-8 space-y-4">
+                <details class="bg-gray-50 rounded-lg border border-gray-200" open>
+                    <summary class="p-4 cursor-pointer font-bold text-red-900 flex justify-between items-center">1. Identificação do Projeto<i class="fas fa-chevron-down transition-transform"></i></summary>
+                    <div class="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div><label class="font-semibold text-sm text-gray-700">Identificador</label><input type="text" id="Identificador" class="w-full mt-1 p-2 border rounded-md bg-gray-200" readonly></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Ano Implantação</label><input type="number" id="Ano_Implantacao" placeholder="YYYY" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Regional</label><select id="Regional" class="w-full mt-1 p-2 border rounded-md bg-white"><option>Sul</option><option>Sudeste</option><option>Centro-Oeste</option><option>Norte</option><option>Nordeste</option></select></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Estação BdRaf</label><input type="text" id="Estacao_BdRaf" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">COD_IBGE</label><input type="number" id="COD_IBGE" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Municipio</label><input type="text" id="Municipio" class="w-full mt-1 p-2 border rounded-md"></div>
+                    </div>
+                </details>
+                <details class="bg-gray-50 rounded-lg border border-gray-200">
+                    <summary class="p-4 cursor-pointer font-bold text-red-900 flex justify-between items-center">2. Detalhes de CAPEX e Reservas<i class="fas fa-chevron-down transition-transform"></i></summary>
+                    <div class="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div><label class="font-semibold text-sm text-gray-700">Projeto CAPEX</label><input type="text" id="Projeto_CAPEX" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Sub-Projeto CAPEX</label><input type="text" id="Sub-Projeto_CAPEX" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">SI CAPEX</label><input type="text" id="SI_CAPEX" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">CAPEX (R$)</label><input type="number" id="CAPEX" step="0.01" placeholder="10000.00" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">OS WF</label><input type="text" id="OS_WF" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">QUALIDADE PREENCHIMENTO</label><select id="QUALIDADE_PREENCHIMENTO" class="w-full mt-1 p-2 border rounded-md bg-white"><option>Excelente</option><option>Bom</option><option>Regular</option><option>Ruim</option></select></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Reserva_1</label><input type="text" id="Reserva_1" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Reserva_2</label><input type="text" id="Reserva_2" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Reserva_3</label><input type="text" id="Reserva_3" class="w-full mt-1 p-2 border rounded-md"></div>
+                    </div>
+                </details>
+                <details class="bg-gray-50 rounded-lg border border-gray-200" open>
+                    <summary class="p-4 cursor-pointer font-bold text-red-900 flex justify-between items-center">3. Cronograma e Marcos (Planejado vs. Real)<i class="fas fa-chevron-down transition-transform"></i></summary>
+                    <div class="p-6 border-t border-gray-200 space-y-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="text-xs text-red-800 uppercase bg-red-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left rounded-tl-lg">Marco</th>
+                                        <th class="px-4 py-3 text-left">Planejado</th>
+                                        <th class="px-4 py-3 text-left rounded-tr-lg">Real</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Req Gen</td><td><input type="date" id="Req_Gen_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Req_Gen_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Projeto Executivo</td><td><input type="date" id="Projeto_Executivo_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Projeto_Executivo_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Licenciamento</td><td><input type="date" id="Licenciamento_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Licenciamento_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">MOS</td><td><input type="date" id="MOS_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="MOS_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Swap</td><td><input type="date" id="Swap_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Swap_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Construção Total</td><td><input type="date" id="Construcao_Total_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Construcao_Total_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">RFI</td><td><input type="date" id="RFI_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="RFI_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Entroncado</td><td><input type="date" id="Entroncado_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Entroncado_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Documentação</td><td><input type="date" id="Documentacao_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Documentacao_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">GP</td><td><input type="date" id="GP_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="GP_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </details>
+                 <details class="bg-gray-50 rounded-lg border border-gray-200">
+                    <summary class="p-4 cursor-pointer font-bold text-red-900 flex justify-between items-center">4. Métricas de Execução<i class="fas fa-chevron-down transition-transform"></i></summary>
+                    <div class="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label class="font-semibold text-sm text-gray-700">Km Projeto Executado</label><input type="number" id="Km_Projeto_Executado" step="0.01" placeholder="10.5" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Km Construído</label><input type="number" id="Km_Construido" step="0.01" placeholder="8.2" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Data Protocolo Real</label><input type="date" id="Data_Protocolo_Real" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Construção Parcial Real</label><input type="date" id="Construcao_Parcial_Real" class="w-full mt-1 p-2 border rounded-md"></div>
+                    </div>
+                </details>
+                <div class="pt-6 flex justify-end">
+                    <button type="submit" class="bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 transition-all duration-300">
+                        <i class="fas fa-save mr-2"></i>Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // --- Lógica da Aplicação Real ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchButton = document.getElementById('search-button');
+            const clearButton = document.getElementById('clear-button');
+            const searchIdInput = document.getElementById('search-id');
+            const form = document.getElementById('project-form');
+            const statusMessage = document.getElementById('status-message');
+            const fieldIds = [...form.elements].map(el => el.id).filter(Boolean);
+    
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            const csrftoken = getCookie('csrftoken');
+    
+            searchButton.addEventListener('click', async () => {
+                const searchId = searchIdInput.value.trim();
+                if (!searchId) {
+                    showStatusMessage('Por favor, digite um Identificador para buscar.', 'error');
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/projetos/${searchId}/`);
+                    if (response.ok) {
+                        const project = await response.json();
+                        populateForm(project);
+                        showStatusMessage(`Projeto ${searchId} carregado para edição.`, 'success');
+                    } else {
+                        showStatusMessage(`Projeto ${searchId} não encontrado. Preencha para criar um novo.`, 'info');
+                        clearForm();
+                        document.getElementById('Identificador').value = searchId;
+                    }
+                } catch (error) {
+                    showStatusMessage('Erro ao conectar com o servidor.', 'error');
+                }
+            });
+    
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('Identificador').value;
+                if (!id) {
+                    showStatusMessage('Não é possível salvar sem um Identificador.', 'error');
+                    return;
+                }
+    
+                let formData = {};
+                fieldIds.forEach(fieldId => {
+                    const input = document.getElementById(fieldId);
+                    if (input) {
+                        formData[fieldId] = input.value || null;
+                    }
+                });
+    
+                const projectExists = await fetch(`/api/projetos/${id}/`).then(res => res.ok);
+                const method = projectExists ? 'PUT' : 'POST';
+                const url = projectExists ? `/api/projetos/${id}/` : '/api/projetos/';
+    
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify(formData)
+                    });
+    
+                    if (response.ok) {
+                        const action = projectExists ? 'atualizado' : 'criado';
+                        showStatusMessage(`Projeto ${id} ${action} com sucesso!`, 'success');
+                    } else {
+                        const errorData = await response.json();
+                        showStatusMessage(`Erro ao salvar: ${JSON.stringify(errorData)}`, 'error');
+                    }
+                } catch (error) {
+                    showStatusMessage('Erro ao conectar com o servidor.', 'error');
+                }
+            });
+    
+            function populateForm(project) {
+                fieldIds.forEach(fieldId => {
+                    const input = document.getElementById(fieldId);
+                    if (input) input.value = project[fieldId] || '';
+                });
+            }
+            function clearForm() {
+                form.reset();
+                document.getElementById('Identificador').value = '';
+            }
+            function showStatusMessage(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'font-semibold transition-opacity duration-300';
+                if (type === 'success') statusMessage.classList.add('text-green-300');
+                else if (type === 'error') statusMessage.classList.add('text-yellow-300');
+                else statusMessage.classList.add('text-blue-200');
+                
+                setTimeout(() => { statusMessage.textContent = ''; }, 4000);
+            }
+        });
+    </script>
+</body>
+</html>
