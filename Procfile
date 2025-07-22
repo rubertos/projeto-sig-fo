@@ -1,0 +1,1 @@
+web: gunicorn sigfo_backend.wsgi --log-file -
