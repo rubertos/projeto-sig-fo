@@ -1,3 +1,4 @@
+import socket
 import os
 from pathlib import Path
 
@@ -14,7 +15,7 @@ SECRET_KEY = 'django-insecure-ms5^w7i4ds9c8n$59@fy3623d&yf0yg)!r-t!1bq@qnk6v5ck*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['ruberto.pythonanywhere.com', 'p']
 
 
 # Application definition
