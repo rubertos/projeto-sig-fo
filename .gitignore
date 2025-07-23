@@ -1,0 +1,29 @@
+# Arquivos de dados grandes
+*.tif
+*.tiff
+*.img
+*.jp2
+*.sid
+*.ecw
+/dados_grandes/
+
+# Arquivos temporários e de cache
+*.log
+*.lock
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Arquivos específicos do QGIS
+.qgis-user.db
+*.qgs~
+*.qgs#
+
+# Arquivos específicos do ArcGIS
+*.aprx~
+*.aprx#
+*.gdb/
+*.geodatabase/
+/Index/
+/Export/
