@@ -1,29 +1,11 @@
-# Arquivos de dados grandes
-*.tif
-*.tiff
-*.img
-*.jp2
-*.sid
-*.ecw
-/dados_grandes/
+# Banco de dados
+db.sqlite3
+*.sqlite3
 
-# Arquivos temporários e de cache
-*.log
-*.lock
-*.swp
-*~
-.DS_Store
-Thumbs.db
+# Ambiente Virtual
+venv/
+.venv/
 
-# Arquivos específicos do QGIS
-.qgis-user.db
-*.qgs~
-*.qgs#
-
-# Arquivos específicos do ArcGIS
-*.aprx~
-*.aprx#
-*.gdb/
-*.geodatabase/
-/Index/
-/Export/
+# Outros
+__pycache__/
+*.py[cod]
