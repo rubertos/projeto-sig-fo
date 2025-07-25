@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIG FO - Dashboard e Gestão de Projetos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] summary .fa-chevron-down { transform: rotate(180deg); }
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; filter: invert(0.5) sepia(1) saturate(5) hue-rotate(320deg); }
+        .table-container { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-red-800 shadow-lg sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-white"><i class="fas fa-network-wired mr-2"></i>SIG FO</div>
+            <div class="flex items-center space-x-6">
+                <a href="/painel/" id="admin-panel-link" class="text-white font-semibold hover:text-red-200 transition duration-300"><i class="fas fa-tachometer-alt mr-2"></i>Painel Admin</a>
+                <div id="user-info" class="text-white hidden sm:block bg-red-900 px-3 py-1 rounded-md"></div>
+                <a href="/" id="logout-button" class="text-white hover:text-red-200 transition duration-300"><i class="fas fa-sign-out-alt fa-lg"></i></a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+
+        <!-- Seção de Notificações de Novos Projetos -->
+        <div id="notification-banner" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-8 rounded-r-lg shadow-md" role="alert">
+            <div class="flex">
+                <div class="py-1"><i class="fas fa-info-circle text-yellow-500 mr-3"></i></div>
+                <div>
+                    <p class="font-bold">Novos Projetos Adicionados!</p>
+                    <p id="notification-text" class="text-sm">Os seguintes projetos foram adicionados à sua regional e precisam da sua atenção.</p>
+                    <button id="dismiss-notification-button" class="mt-2 text-xs font-semibold text-gray-600 hover:text-gray-800">Dispensar</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Dashboard de Atualizações</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-lg flex items-center">
+                    <div class="bg-red-100 p-4 rounded-full mr-4"><i class="fas fa-folder-open text-red-600 text-2xl"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Total de Projetos para Atualizar</p>
+                        <p id="total-projetos" class="text-2xl font-bold">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg flex items-center">
+                    <div class="bg-green-100 p-4 rounded-full mr-4"><i class="fas fa-plus-circle text-green-600 text-2xl"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Novos (Ano Implantação)</p>
+                        <p id="novos-projetos" class="text-2xl font-bold">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg flex items-center">
+                    <div class="bg-blue-100 p-4 rounded-full mr-4"><i class="fas fa-sync-alt text-blue-600 text-2xl"></i></div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Atualizados (Últimos 7 dias)</p>
+                        <p id="atualizados-projetos" class="text-2xl font-bold">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-red-900 mb-4">Editar ou Cadastrar Projeto</h2>
+            <div class="flex flex-col sm:flex-row items-end gap-4">
+                <div class="w-full sm:w-auto flex-grow">
+                    <label for="search-id" class="font-semibold text-sm text-gray-700">Identificador do Projeto</label>
+                    <input type="text" id="search-id" placeholder="Digite o ID para editar ou criar um novo" class="w-full mt-1 p-2 border rounded-md focus:ring-red-500 focus:border-red-500">
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button id="search-button" type="button" class="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 transition-all duration-300 w-full">
+                        <i class="fas fa-search mr-2"></i>Buscar
+                    </button>
+                    <button id="clear-button" type="button" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-all duration-300 w-full">
+                        <i class="fas fa-eraser mr-2"></i>Limpar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <div class="bg-red-700 p-6 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-white"><i class="fas fa-edit mr-3"></i>Formulário de Atualização Semanal</h1>
+                <div id="status-message" class="text-white font-semibold"></div>
+            </div>
+
+            <form id="project-form" class="p-4 md:p-8 space-y-4">
+                 <details class="bg-gray-50 rounded-lg border border-gray-200" open>
+                    <summary class="p-4 cursor-pointer font-bold text-red-900 flex justify-between items-center">1. Identificação do Projeto<i class="fas fa-chevron-down transition-transform"></i></summary>
+                    <div class="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div><label class="font-semibold text-sm text-gray-700">Identificador</label><input type="text" id="Identificador" class="w-full mt-1 p-2 border rounded-md bg-gray-200" readonly></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Ano Implantação</label><input type="number" id="Ano_Implantacao" placeholder="YYYY" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Regional</label><select id="Regional" class="w-full mt-1 p-2 border rounded-md bg-white"><option>Sul</option><option>Sudeste</option><option>Centro-Oeste</option><option>Norte</option><option>Nordeste</option></select></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Estação BdRaf</label><input type="text" id="Estacao_BdRaf" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">COD_IBGE</label><input type="number" id="COD_IBGE" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Municipio</label><input type="text" id="Municipio" class="w-full mt-1 p-2 border rounded-md"></div>
+                    </div>
+                </details>
+                 <details class="bg-gray-50 rounded-lg border border-gray-200">
+                    <summary class="p-4 cursor-pointer font-bold text-red-900 flex justify-between items-center">2. Detalhes de CAPEX e Reservas<i class="fas fa-chevron-down transition-transform"></i></summary>
+                    <div class="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div><label class="font-semibold text-sm text-gray-700">Projeto CAPEX</label><input type="text" id="Projeto_CAPEX" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Sub-Projeto CAPEX</label><input type="text" id="Sub-Projeto_CAPEX" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">SI CAPEX</label><input type="text" id="SI_CAPEX" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">CAPEX (R$)</label><input type="number" id="CAPEX" step="0.01" placeholder="10000.00" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">OS WF</label><input type="text" id="OS_WF" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">QUALIDADE PREENCHIMENTO</label><select id="QUALIDADE_PREENCHIMENTO" class="w-full mt-1 p-2 border rounded-md bg-white"><option>Excelente</option><option>Bom</option><option>Regular</option><option>Ruim</option></select></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Reserva_1</label><input type="text" id="Reserva_1" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Reserva_2</label><input type="text" id="Reserva_2" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Reserva_3</label><input type="text" id="Reserva_3" class="w-full mt-1 p-2 border rounded-md"></div>
+                    </div>
+                </details>
+                <details class="bg-gray-50 rounded-lg border border-gray-200" open>
+                    <summary class="p-4 cursor-pointer font-bold text-red-900 flex justify-between items-center">3. Cronograma e Marcos (Planejado vs. Real)<i class="fas fa-chevron-down transition-transform"></i></summary>
+                    <div class="p-6 border-t border-gray-200 space-y-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="text-xs text-red-800 uppercase bg-red-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left rounded-tl-lg">Marco</th>
+                                        <th class="px-4 py-3 text-left">Planejado</th>
+                                        <th class="px-4 py-3 text-left rounded-tr-lg">Real</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Req Gen</td><td><input type="date" id="Req_Gen_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Req_Gen_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Projeto Executivo</td><td><input type="date" id="Projeto_Executivo_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Projeto_Executivo_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Licenciamento</td><td><input type="date" id="Licenciamento_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Licenciamento_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">MOS</td><td><input type="date" id="MOS_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="MOS_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Swap</td><td><input type="date" id="Swap_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Swap_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Construção Total</td><td><input type="date" id="Construcao_Total_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Construcao_Total_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">RFI</td><td><input type="date" id="RFI_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="RFI_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Entroncado</td><td><input type="date" id="Entroncado_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Entroncado_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">Documentação</td><td><input type="date" id="Documentacao_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="Documentacao_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                    <tr class="border-b"><td class="p-2 font-semibold">GP</td><td><input type="date" id="GP_Plan" class="w-full p-2 border rounded-md"></td><td><input type="date" id="GP_Real" class="w-full p-2 border rounded-md"></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </details>
+                 <details class="bg-gray-50 rounded-lg border border-gray-200">
+                    <summary class="p-4 cursor-pointer font-bold text-red-900 flex justify-between items-center">4. Métricas de Execução<i class="fas fa-chevron-down transition-transform"></i></summary>
+                    <div class="p-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label class="font-semibold text-sm text-gray-700">Km Projeto Executado</label><input type="number" id="Km_Projeto_Executado" step="0.01" placeholder="10.5" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Km Construído</label><input type="number" id="Km_Construido" step="0.01" placeholder="8.2" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Data Protocolo Real</label><input type="date" id="Data_Protocolo_Real" class="w-full mt-1 p-2 border rounded-md"></div>
+                        <div><label class="font-semibold text-sm text-gray-700">Construção Parcial Real</label><input type="date" id="Construcao_Parcial_Real" class="w-full mt-1 p-2 border rounded-md"></div>
+                    </div>
+                </details>
+                <div class="pt-6 flex justify-end">
+                    <button type="submit" class="bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 transition-all duration-300">
+                        <i class="fas fa-save mr-2"></i>Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('sigfoUser'));
+            if (!user) {
+                window.location.href = '/';
+                return;
+            }
+
+            // --- Elementos do DOM ---
+            const notificationBanner = document.getElementById('notification-banner');
+            const notificationText = document.getElementById('notification-text');
+            const dismissNotificationButton = document.getElementById('dismiss-notification-button');
+            const userInfo = document.getElementById('user-info');
+            const adminPanelLink = document.getElementById('admin-panel-link');
+            const regionalSelect = document.getElementById('Regional');
+            const logoutButton = document.getElementById('logout-button');
+            const form = document.getElementById('project-form');
+            const fieldIds = [...form.elements].map(el => el.id).filter(Boolean);
+            const searchIdInput = document.getElementById('search-id');
+            const statusMessage = document.getElementById('status-message');
+            
+            let newProjectsForNotification = [];
+
+            // --- Funções de API e Segurança ---
+            const getCookie = (name) => {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            const csrftoken = getCookie('csrftoken');
+
+            // --- Funções de Notificação ---
+            async function checkNotifications() {
+                if(user.is_staff) return;
+
+                try {
+                    const response = await fetch('/api/notifications/');
+                    if(!response.ok) return;
+                    
+                    const newProjects = await response.json();
+                    if(newProjects.length > 0) {
+                        newProjectsForNotification = newProjects.map(p => p.Identificador);
+                        const projectIds = newProjectsForNotification.join(', ');
+                        notificationText.textContent = `Novos projetos para a sua regional: ${projectIds}. Por favor, preencha os dados em falta.`;
+                        notificationBanner.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error("Erro ao buscar notificações:", error);
+                }
+            }
+
+            dismissNotificationButton.addEventListener('click', async () => {
+                try {
+                     await fetch('/api/notifications/dismiss/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                        body: JSON.stringify({ project_ids: newProjectsForNotification })
+                    });
+                    notificationBanner.classList.add('hidden');
+                } catch (error) {
+                    console.error("Erro ao dispensar notificações:", error);
+                }
+            });
+
+            // --- Funções Principais da Página ---
+            async function fetchProjects() {
+                const response = await fetch('/api/projetos/', { headers: { 'X-CSRFToken': csrftoken } });
+                if (response.ok) return await response.json();
+                return [];
+            }
+            
+            async function fetchProjectById(id) {
+                const response = await fetch(`/api/projetos/${id}/`, { headers: { 'X-CSRFToken': csrftoken } });
+                if (response.ok) return await response.json();
+                return null;
+            }
+
+            async function saveProject(projectData, method) {
+                const id = projectData.Identificador;
+                const url = method === 'PUT' ? `/api/projetos/${id}/` : '/api/projetos/';
+                return await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                    body: JSON.stringify(projectData)
+                });
+            }
+            
+            function setDateConstraints() {
+                const today = new Date().toISOString().split('T')[0];
+                const inputs = form.getElementsByTagName('input');
+                for (let input of inputs) {
+                    if (input.type === 'date' && input.id.endsWith('_Real')) {
+                        input.setAttribute('max', today);
+                    }
+                }
+            }
+
+            function populateForm(project) {
+                fieldIds.forEach(fieldId => {
+                    const input = document.getElementById(fieldId);
+                    if (input && project[fieldId] !== null && project[fieldId] !== undefined) {
+                       input.value = project[fieldId];
+                    } else if (input) {
+                       input.value = '';
+                    }
+                });
+            }
+            
+            function clearForm() {
+                form.reset();
+                document.getElementById('Identificador').value = '';
+                if (!user.is_staff) {
+                    regionalSelect.value = user.regional;
+                }
+            }
+
+            function showStatusMessage(message, type = 'info') {
+                statusMessage.textContent = message;
+                statusMessage.className = 'font-semibold transition-opacity duration-300';
+                if (type === 'success') statusMessage.classList.add('text-green-300');
+                else if (type === 'error') statusMessage.classList.add('text-yellow-300');
+                else statusMessage.classList.add('text-blue-200');
+                setTimeout(() => { statusMessage.textContent = ''; }, 5000);
+            }
+
+            async function initializePage() {
+                userInfo.textContent = user.is_staff ? 'Admin' : `Regional: ${user.regional}`;
+                if (!user.is_staff) {
+                    adminPanelLink.style.display = 'none';
+                    regionalSelect.value = user.regional;
+                    regionalSelect.disabled = true;
+                }
+
+                setDateConstraints();
+                const projects = await fetchProjects();
+                document.getElementById('total-projetos').textContent = projects.length;
+
+                await checkNotifications(); 
+            }
+
+            // --- Event Listeners ---
+            logoutButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                fetch('/api/logout/', { method: 'POST', headers: { 'X-CSRFToken': csrftoken } })
+                .then(() => {
+                    localStorage.removeItem('sigfoUser');
+                    window.location.href = '/';
+                });
+            });
+
+            document.getElementById('search-button').addEventListener('click', async () => {
+                const searchId = searchIdInput.value.trim();
+                if (!searchId) return;
+                const project = await fetchProjectById(searchId);
+                if (project) {
+                    populateForm(project);
+                    showStatusMessage(`Projeto ${searchId} carregado.`, 'success');
+                } else {
+                    clearForm();
+                    document.getElementById('Identificador').value = searchId;
+                    showStatusMessage(`Projeto ${searchId} não encontrado. Preencha para criar.`, 'info');
+                }
+            });
+            
+            document.getElementById('clear-button').addEventListener('click', clearForm);
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                let projectData = {};
+                fieldIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el){
+                        projectData[id] = el.value === '' ? null : el.value;
+                    }
+                });
+                
+                const id = projectData.Identificador;
+                if (!id) {
+                    showStatusMessage('O campo Identificador é obrigatório.', 'error');
+                    return;
+                }
+
+                const exists = await fetchProjectById(id);
+                const method = exists ? 'PUT' : 'POST';
+                
+                const response = await saveProject(projectData, method);
+
+                if (response.ok) {
+                    showStatusMessage(`Projeto ${id} salvo com sucesso!`, 'success');
+                    initializePage();
+                } else {
+                    const errorData = await response.json();
+                    const errorMsg = Object.entries(errorData).map(([key, value]) => `${key}: ${value}`).join('; ');
+                    showStatusMessage(`Erro ao salvar: ${errorMsg}`, 'error');
+                }
+            });
+            
+            initializePage();
+        });
+    </script>
+</body>
+</html>

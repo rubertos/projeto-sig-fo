@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Biblioteca para manipulação de arquivos Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -75,6 +77,23 @@
                         <p id="atualizados-projetos" class="text-2xl font-bold">0</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Seção de Importar/Exportar -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-red-900 mb-4">Importar e Exportar Dados</h2>
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <div>
+                    <label for="import-file" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 cursor-pointer transition-all duration-300">
+                        <i class="fas fa-file-import mr-2"></i>Importar Planilha (.xlsx)
+                    </label>
+                    <input type="file" id="import-file" class="hidden" accept=".xlsx, .xls">
+                </div>
+                <button id="export-button" type="button" class="bg-yellow-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-yellow-600 transition-all duration-300">
+                    <i class="fas fa-file-export mr-2"></i>Exportar para Excel
+                </button>
+                <span id="import-status" class="text-sm text-gray-600"></span>
             </div>
         </div>
         
@@ -195,7 +214,20 @@
     </main>
 
     <script>
-        // --- Lógica da Aplicação Real ---
+        // --- Base de Dados para ATUALIZAÇÃO (Baseado no SIG FO_RB.xlsb) ---
+        let updateDatabase = [
+            { "Identificador": "PROJ-SP-001", "Ano_Implantacao": 2023, "Regional": "Sudeste", "Estacao_BdRaf": "SPO-01", "COD_IBGE": 3550308, "Municipio": "São Paulo", "Projeto_CAPEX": "EXP-SP-23", "Sub-Projeto_CAPEX": "ZONA-SUL", "SI_CAPEX": "SI-1001", "CAPEX": 150000, "OS_WF": "OS-5567", "Req_Gen_Plan": "2023-01-10", "Req_Gen_Real": "2023-01-12", "Projeto_Executivo_Plan": "2023-02-15", "Projeto_Executivo_Real": "2023-02-20", "Licenciamento_Plan": "2023-03-01", "Licenciamento_Real": "2023-03-10", "Km_Projeto_Executado": 25.5, "Km_Construido": 20.1, "QUALIDADE_PREENCHIMENTO": "Excelente", "dataAtualizacao": "2025-07-18" },
+            { "Identificador": "PROJ-PR-002", "Ano_Implantacao": 2024, "Regional": "Sul", "Estacao_BdRaf": "CTA-05", "COD_IBGE": 4106902, "Municipio": "Curitiba", "Projeto_CAPEX": "EXP-PR-24", "Sub-Projeto_CAPEX": "CENTRO", "SI_CAPEX": "SI-1002", "CAPEX": 95000, "OS_WF": "OS-5588", "Req_Gen_Plan": "2024-02-01", "Req_Gen_Real": "2024-02-05", "Projeto_Executivo_Plan": "2024-03-10", "Projeto_Executivo_Real": 'Não realizado', "Licenciamento_Plan": "2024-04-01", "Licenciamento_Real": null, "Km_Projeto_Executado": 15.0, "Km_Construido": 5.2, "QUALIDADE_PREENCHIMENTO": "Bom", "dataAtualizacao": "2025-07-20" },
+            { "Identificador": "PROJ-BA-003", "Ano_Implantacao": 2024, "Regional": "Nordeste", "Estacao_BdRaf": "SSA-02", "COD_IBGE": 2927408, "Municipio": "Salvador", "Projeto_CAPEX": "EXP-BA-24", "Sub-Projeto_CAPEX": "ORLA", "SI_CAPEX": "SI-1003", "CAPEX": 210000, "OS_WF": "OS-5591", "Req_Gen_Plan": "2024-01-20", "Req_Gen_Real": "2024-01-20", "Projeto_Executivo_Plan": "2024-02-25", "Projeto_Executivo_Real": "2024-02-28", "Licenciamento_Plan": "2024-03-15", "Licenciamento_Real": "2024-03-20", "Km_Projeto_Executado": 35.8, "Km_Construido": 30.0, "QUALIDADE_PREENCHIMENTO": "Excelente", "dataAtualizacao": "2024-06-30" }
+        ];
+
+        // --- Base de Dados para CONSULTA (Baseado no PnFO_geral...csv) ---
+        const consultaDatabase = [
+            { "Data_de_Inclusao": "2020-02-20 12:05:54", "Data_Revisao": "2024-08-27 12:06:24", "Identificador": "FO-621652", "Regional": "NO", "Estacao_BdRaf": "AMCRI01", "Meio_TX": "SAT", "COD_IBGE": 1301209, "Municipio": "COARI", "Status_Estacao": "Mobilizada", "Solucao_FO": "ANEL", "Ano_Implantacao": 2020 },
+            { "Data_de_Inclusao": "2025-07-18 15:56:00", "Data_Revisao": "2025-07-18 15:56:00", "Identificador": "FO-6051898", "Regional": "RJ/ES", "Estacao_BdRaf": "ESMTZ01", "Meio_TX": "FO", "COD_IBGE": 3203320, "Municipio": "MARATAÍZES", "Status_Estacao": "Mobilizada", "Solucao_FO": "LINEAR", "Ano_Implantacao": 2025 },
+            { "Data_de_Inclusao": "2025-07-18 15:56:01", "Data_Revisao": "2025-07-18 15:56:01", "Identificador": "FO-6051899", "Regional": "RJ/ES", "Estacao_BdRaf": "ESMMS01", "Meio_TX": "FO", "COD_IBGE": 3203403, "Municipio": "MIMOSO DO SUL", "Status_Estacao": "Mobilizada", "Solucao_FO": "LINEAR", "Ano_Implantacao": 2025 }
+        ];
+
         document.addEventListener('DOMContentLoaded', () => {
             const searchButton = document.getElementById('search-button');
             const clearButton = document.getElementById('clear-button');
@@ -203,97 +235,202 @@
             const form = document.getElementById('project-form');
             const statusMessage = document.getElementById('status-message');
             const fieldIds = [...form.elements].map(el => el.id).filter(Boolean);
-    
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
+            
+            const consultaButton = document.getElementById('consulta-button');
+            const consultaRegionalSelect = document.getElementById('consulta-regional');
+            const consultaResultadosDiv = document.getElementById('consulta-resultados');
+
+            const importFileInput = document.getElementById('import-file');
+            const exportButton = document.getElementById('export-button');
+            const importStatus = document.getElementById('import-status');
+
+            function updateDashboard() {
+                const totalProjetos = updateDatabase.length;
+                const currentYear = new Date().getFullYear();
+                const novosProjetos = updateDatabase.filter(p => p.Ano_Implantacao == currentYear).length;
+                const hoje = new Date();
+                const seteDiasAtras = new Date();
+                seteDiasAtras.setDate(hoje.getDate() - 7);
+                const atualizadosProjetos = updateDatabase.filter(p => new Date(p.dataAtualizacao) >= seteDiasAtras).length;
+
+                document.getElementById('total-projetos').textContent = totalProjetos;
+                document.getElementById('novos-projetos').textContent = novosProjetos;
+                document.getElementById('atualizados-projetos').textContent = atualizadosProjetos;
             }
-            const csrftoken = getCookie('csrftoken');
-    
-            searchButton.addEventListener('click', async () => {
+
+            // --- Lógica de Importação ---
+            importFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        // Substitui a base de dados e atualiza a UI "mama, ozzy eterno"
+                        updateDatabase = json;
+                        updateDashboard();
+                        clearForm();
+                        importStatus.textContent = `${json.length} projetos importados com sucesso!`;
+                        setTimeout(() => { importStatus.textContent = ''; }, 5000);
+                    } catch (error) {
+                        importStatus.textContent = 'Erro ao ler o arquivo. Verifique o formato.';
+                        console.error("Erro na importação:", error);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            // --- Lógica de Exportação ---
+            exportButton.addEventListener('click', () => {
+                const worksheet = XLSX.utils.json_to_sheet(updateDatabase);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Projetos");
+                XLSX.writeFile(workbook, "SIG_FO_Export.xlsx");
+            });
+
+            consultaButton.addEventListener('click', () => {
+                const regional = consultaRegionalSelect.value;
+                if (!regional) {
+                    consultaResultadosDiv.innerHTML = `<p class="text-center text-red-600">Por favor, selecione uma regional para consultar.</p>`;
+                    return;
+                }
+                const resultados = consultaDatabase.filter(p => p.Regional === regional);
+                
+                if (resultados.length === 0) {
+                    consultaResultadosDiv.innerHTML = `<p class="text-center text-gray-600">Nenhum projeto encontrado para a regional "${regional}".</p>`;
+                    return;
+                }
+
+                let tableHTML = `<div class="table-container border rounded-lg"><table class="w-full text-sm text-left text-gray-700">
+                    <thead class="text-xs text-red-800 uppercase bg-red-50 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3">Identificador</th>
+                            <th class="px-4 py-3">Estação</th>
+                            <th class="px-4 py-3">Município</th>
+                            <th class="px-4 py-3">Status</th>
+                        </tr>
+                    </thead><tbody>`;
+                
+                resultados.forEach(p => {
+                    tableHTML += `<tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-4 py-2 font-medium">${p.Identificador}</td>
+                        <td class="px-4 py-2">${p.Estacao_BdRaf}</td>
+                        <td class="px-4 py-2">${p.Municipio}</td>
+                        <td class="px-4 py-2">${p.Status_Estacao}</td>
+                    </tr>`;
+                });
+
+                tableHTML += `</tbody></table></div>`;
+                consultaResultadosDiv.innerHTML = tableHTML;
+            });
+
+            searchButton.addEventListener('click', () => {
                 const searchId = searchIdInput.value.trim();
                 if (!searchId) {
                     showStatusMessage('Por favor, digite um Identificador para buscar.', 'error');
                     return;
                 }
-                try {
-                    const response = await fetch(`/api/projetos/${searchId}/`);
-                    if (response.ok) {
-                        const project = await response.json();
-                        populateForm(project);
-                        showStatusMessage(`Projeto ${searchId} carregado para edição.`, 'success');
-                    } else {
-                        showStatusMessage(`Projeto ${searchId} não encontrado. Preencha para criar um novo.`, 'info');
-                        clearForm();
-                        document.getElementById('Identificador').value = searchId;
-                    }
-                } catch (error) {
-                    showStatusMessage('Erro ao conectar com o servidor.', 'error');
+                const project = updateDatabase.find(p => p.Identificador.toLowerCase() === searchId.toLowerCase());
+                if (project) {
+                    populateForm(project);
+                    showStatusMessage(`Projeto ${searchId} carregado para edição.`, 'success');
+                } else {
+                    showStatusMessage(`Projeto ${searchId} não encontrado. Preencha para criar um novo.`, 'info');
+                    clearForm();
+                    document.getElementById('Identificador').value = searchId;
                 }
             });
-    
-            form.addEventListener('submit', async (e) => {
+
+            clearButton.addEventListener('click', () => {
+                clearForm();
+                searchIdInput.value = '';
+                showStatusMessage('Formulário limpo.', 'info');
+            });
+            
+            form.addEventListener('submit', (e) => {
                 e.preventDefault();
+                
+                const today = new Date().toISOString().split('T')[0];
+                let isValid = true;
+                let errorMessage = '';
+
+                for (const fieldId of fieldIds) {
+                    const input = document.getElementById(fieldId);
+                    if (!input) continue;
+                    
+                    if (fieldId.endsWith('_Plan') && !input.value) {
+                        isValid = false;
+                        errorMessage = `O campo planejado "${fieldId.replace('_Plan', '')}" é obrigatório.`;
+                        break;
+                    }
+
+                    if (fieldId.endsWith('_Real') && input.value && input.value > today) {
+                        isValid = false;
+                        errorMessage = `A data real do campo "${fieldId.replace('_Real', '')}" não pode ser futura.`;
+                        break;
+                    }
+                }
+
+                if (!isValid) {
+                    showStatusMessage(errorMessage, 'error');
+                    return;
+                }
+
                 const id = document.getElementById('Identificador').value;
                 if (!id) {
                     showStatusMessage('Não é possível salvar sem um Identificador.', 'error');
                     return;
                 }
-    
+
+                const projectIndex = updateDatabase.findIndex(p => p.Identificador === id);
+                
                 let formData = {};
                 fieldIds.forEach(fieldId => {
                     const input = document.getElementById(fieldId);
                     if (input) {
-                        formData[fieldId] = input.value || null;
+                        if (fieldId.endsWith('_Real') && !input.value) {
+                            formData[fieldId] = 'Não realizado';
+                        } else {
+                            formData[fieldId] = input.value;
+                        }
                     }
                 });
-    
-                const projectExists = await fetch(`/api/projetos/${id}/`).then(res => res.ok);
-                const method = projectExists ? 'PUT' : 'POST';
-                const url = projectExists ? `/api/projetos/${id}/` : '/api/projetos/';
-    
-                try {
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrftoken
-                        },
-                        body: JSON.stringify(formData)
-                    });
-    
-                    if (response.ok) {
-                        const action = projectExists ? 'atualizado' : 'criado';
-                        showStatusMessage(`Projeto ${id} ${action} com sucesso!`, 'success');
-                    } else {
-                        const errorData = await response.json();
-                        showStatusMessage(`Erro ao salvar: ${JSON.stringify(errorData)}`, 'error');
-                    }
-                } catch (error) {
-                    showStatusMessage('Erro ao conectar com o servidor.', 'error');
+
+                if (projectIndex > -1) { // Atualiza
+                    updateDatabase[projectIndex] = { ...updateDatabase[projectIndex], ...formData, dataAtualizacao: today };
+                    showStatusMessage(`Projeto ${id} atualizado com sucesso!`, 'success');
+                } else { // Cria
+                    const newProject = { ...formData, dataAtualizacao: today };
+                    updateDatabase.push(newProject);
+                    showStatusMessage(`Novo projeto ${id} criado com sucesso!`, 'success');
                 }
+                updateDashboard();
             });
-    
+
             function populateForm(project) {
                 fieldIds.forEach(fieldId => {
                     const input = document.getElementById(fieldId);
-                    if (input) input.value = project[fieldId] || '';
+                    if (input) {
+                        if (project[fieldId] === 'Não realizado') {
+                            input.value = '';
+                        } else {
+                            input.value = project[fieldId] || '';
+                        }
+                    }
                 });
             }
+            
             function clearForm() {
                 form.reset();
                 document.getElementById('Identificador').value = '';
             }
+
             function showStatusMessage(message, type) {
                 statusMessage.textContent = message;
                 statusMessage.className = 'font-semibold transition-opacity duration-300';
@@ -303,7 +440,10 @@
                 
                 setTimeout(() => { statusMessage.textContent = ''; }, 4000);
             }
+
+            updateDashboard();
         });
     </script>
+
 </body>
 </html>

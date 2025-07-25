@@ -15,7 +15,7 @@ SECRET_KEY = 'django-insecure-ms5^w7i4ds9c8n$59@fy3623d&yf0yg)!r-t!1bq@qnk6v5ck*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['ruberto.pythonanywhere.com', 'p']
+ALLOWED_HOSTS = ['ruberto.pythonanywhere.com', 'p', '127.0.0.1']
 
 
 # Application definition
@@ -43,10 +43,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'sigfo_backend.urls'
 
+# Ficheiro: sigfo_backend/settings.py
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Adicione esta linha
+        # Esta é a linha que precisa de corrigir:
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
