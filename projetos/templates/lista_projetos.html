@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIG FO - Lista de Projetos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .table-container { max-height: 70vh; overflow-y: auto; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-red-800 shadow-lg sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-white"><i class="fas fa-list-alt mr-2"></i>Lista de Projetos</div>
+            <div class="flex items-center space-x-6">
+                <a href="/app/" class="text-white font-semibold hover:text-red-200 transition duration-300"><i class="fas fa-arrow-left mr-2"></i>Voltar ao Dashboard</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 id="list-title" class="text-xl font-bold text-red-900 mb-4">A carregar...</h2>
+            <div id="projects-list-table" class="table-container border rounded-lg">
+                <p class="p-4 text-center text-gray-500">A carregar dados...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = JSON.parse(localStorage.getItem('sigfoUser'));
+            if (!user) {
+                window.location.href = '/';
+                return;
+            }
+
+            const listTitle = document.getElementById('list-title');
+            const projectsListTableDiv = document.getElementById('projects-list-table');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const filtro = urlParams.get('filtro');
+
+            async function fetchProjects() {
+                const response = await fetch('/api/projetos/');
+                if (response.ok) return await response.json();
+                return [];
+            }
+
+            function filterProjects(projects, filterType) {
+                const today = new Date();
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(today.getDate() - 7);
+
+                switch (filterType) {
+                    case 'total':
+                        listTitle.innerHTML = '<i class="fas fa-folder-open mr-2"></i>Lista: Total de Projetos';
+                        return projects;
+                    case 'pendentes':
+                        listTitle.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Lista: Projetos com Marcos em Falta';
+                        return projects.filter(p => p.Licenciamento_Real === null || p.Construcao_Total_Real === null || p.Req_Gen_Real === null);
+                    case 'atualizados':
+                        listTitle.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Lista: Atualizados nos Últimos 7 Dias';
+                        return projects.filter(p => new Date(p.data_atualizacao) >= sevenDaysAgo);
+                    default:
+                        listTitle.innerHTML = 'Filtro Inválido';
+                        return [];
+                }
+            }
+
+            function renderTable(projects) {
+                if (projects.length === 0) {
+                    projectsListTableDiv.innerHTML = '<p class="p-4 text-center text-gray-500">Nenhum projeto encontrado para este filtro.</p>';
+                    return;
+                }
+
+                let tableHTML = `
+                    <table class="w-full text-sm text-left text-gray-700">
+                        <thead class="text-xs text-red-800 uppercase bg-red-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3">Identificador</th>
+                                <th class="px-4 py-3">Município</th>
+                                <th class="px-4 py-3">Data Atualização</th>
+                                <th class="px-4 py-3">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                projects.forEach(p => {
+                    const dataAtualizacao = p.data_atualizacao ? new Date(p.data_atualizacao).toLocaleDateString('pt-BR') : 'N/A';
+                    tableHTML += `
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td class="px-4 py-2 font-medium">${p.Identificador}</td>
+                            <td class="px-4 py-2">${p.Municipio || 'N/A'}</td>
+                            <td class="px-4 py-2">${dataAtualizacao}</td>
+                            <td class="px-4 py-2">
+                                <a href="/app/?id=${p.Identificador}" class="text-red-600 hover:underline font-semibold">Editar</a>
+                            </td>
+                        </tr>`;
+                });
+                tableHTML += `</tbody></table>`;
+                projectsListTableDiv.innerHTML = tableHTML;
+            }
+
+            const allProjects = await fetchProjects();
+            const filteredProjects = filterProjects(allProjects, filtro);
+            renderTable(filteredProjects);
+        });
+    </script>
+</body>
+</html>
