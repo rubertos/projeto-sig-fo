@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 # Adicione a importação da nova view aqui:
+from projetos.views import import_regional_view
 from projetos.views import (
     login_view, index_view, admin_view,
     handle_login, handle_logout, ProjetoViewSet,
@@ -34,5 +35,6 @@ urlpatterns = [
     # Rota principal da API de dados
     path('api/', include(router.urls)),
     path('lista/', lista_projetos_view, name='lista_projetos'),
+    path('api/import_regional/', import_regional_view, name='import_regional'),
 
 ]

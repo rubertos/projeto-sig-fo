@@ -215,3 +215,52 @@ class ProjetoViewSet(viewsets.ModelViewSet):
         if regional_group:
             return Projeto.objects.filter(Regional=regional_group.name)
         return Projeto.objects.none()
+    
+@csrf_exempt
+@login_required
+def import_regional_view(request):
+    if request.method == 'POST':
+        file = request.FILES.get('regional_update_file')
+        user = request.user
+
+        if not file:
+            return JsonResponse({'message': 'Nenhum ficheiro enviado.'}, status=400)
+
+        try:
+            df = pd.read_excel(file) # Ou pd.read_csv(file)
+            updated_count = 0
+
+            for _, row in df.iterrows():
+                identificador = row.get('Identificador')
+                if not identificador:
+                    continue
+
+                try:
+                    projeto = Projeto.objects.get(Identificador=identificador)
+
+                    # Pega nos dados da linha para atualizar
+                    update_data = {
+                        'Km_Construido': pd.to_numeric(row.get('Km construído'), errors='coerce'),
+                        'Licenciamento_Real': pd.to_datetime(row.get('Licenciamento Real'), errors='coerce'),
+                        # Adicione outros campos de data/km aqui
+                    }
+
+                    # Filtra apenas os valores que não são nulos para não apagar dados
+                    update_data_cleaned = {k: v for k, v in update_data.items() if pd.notna(v)}
+
+                    for key, value in update_data_cleaned.items():
+                        setattr(projeto, key, value)
+
+                    projeto.ultima_atualizacao_por = user
+                    projeto.save()
+                    updated_count += 1
+
+                except Projeto.DoesNotExist:
+                    continue # Ignora projetos do ficheiro que não existem na base de dados
+
+            return JsonResponse({'message': f'{updated_count} projetos foram atualizados com sucesso!'})
+
+        except Exception as e:
+            return JsonResponse({'message': f'Erro ao processar o ficheiro: {e}'}, status=500)
+
+    return JsonResponse({'message': 'Método não permitido.'}, status=405)
