@@ -46,3 +46,20 @@ class Projeto(models.Model):
 
     def __str__(self):
         return self.Identificador
+    
+# --- NOVA TABELA A ADICIONAR (PASSO 1 DO GUIA) ---
+class PnfoGeral(models.Model):
+    Identificador = models.CharField(max_length=100, primary_key=True, unique=True)
+    Regional = models.CharField(max_length=100, null=True, blank=True)
+    Estacao_BdRaf = models.CharField(max_length=100, null=True, blank=True)
+    COD_IBGE = models.IntegerField(null=True, blank=True)
+    Municipio = models.CharField(max_length=100, null=True, blank=True)
+    Projeto_CAPEX = models.CharField(max_length=100, null=True, blank=True)
+    Sub_Projeto_CAPEX = models.CharField(max_length=100, null=True, blank=True)
+    SI_CAPEX = models.CharField(max_length=100, null=True, blank=True)
+    Ano_Implantacao = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.Identificador
+
+    
