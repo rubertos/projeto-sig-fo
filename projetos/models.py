@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+# --- SUA TABELA EXISTENTE (ESTÁ CORRETA) ---
 class Projeto(models.Model):
     Identificador = models.CharField(max_length=100, primary_key=True, unique=True)
     Ano_Implantacao = models.IntegerField(null=True, blank=True)
@@ -14,7 +15,7 @@ class Projeto(models.Model):
     CAPEX = models.FloatField(null=True, blank=True)
     OS_WF = models.CharField(max_length=100, null=True, blank=True)
     QUALIDADE_PREENCHIMENTO = models.CharField(max_length=50, null=True, blank=True)
-
+    
     Req_Gen_Plan = models.DateField(null=True, blank=True)
     Req_Gen_Real = models.DateField(null=True, blank=True)
     Projeto_Executivo_Plan = models.DateField(null=True, blank=True)
@@ -43,11 +44,12 @@ class Projeto(models.Model):
 
     data_atualizacao = models.DateField(auto_now=True)
     ultima_atualizacao_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    foi_notificado = models.BooleanField(default=False)
 
     def __str__(self):
         return self.Identificador
-    
-# --- NOVA TABELA A ADICIONAR (PASSO 1 DO GUIA) ---
+
+# --- NOVA TABELA QUE ESTAVA EM FALTA ---
 class PnfoGeral(models.Model):
     Identificador = models.CharField(max_length=100, primary_key=True, unique=True)
     Regional = models.CharField(max_length=100, null=True, blank=True)
@@ -61,5 +63,3 @@ class PnfoGeral(models.Model):
 
     def __str__(self):
         return self.Identificador
-
-    
