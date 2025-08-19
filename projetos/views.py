@@ -1,4 +1,5 @@
 import json
+import unicodedata
 import pandas as pd
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth import authenticate, login, logout
@@ -101,21 +102,38 @@ def import_regional_view(request):
             df = pd.read_excel(file)
             updated_count = 0
             
+            # Função para limpar e padronizar os nomes das colunas
+            def clean_col_names(df):
+                cols = df.columns
+                new_cols = []
+                for col in cols:
+                    # Remove acentos e caracteres especiais
+                    cleaned_col = ''.join(c for c in unicodedata.normalize('NFD', col) if unicodedata.category(c) != 'Mn')
+                    # Substitui espaços por underscores e deixa tudo em minúsculas
+                    cleaned_col = cleaned_col.replace(' ', '_').lower()
+                    new_cols.append(cleaned_col)
+                df.columns = new_cols
+                return df
+
+            df = clean_col_names(df)
+
+            # Mapeamento com os nomes das colunas já limpos
             mapeamento_colunas = {
-                'Req Gen Plan': 'Req_Gen_Plan', 'Req Gen Real': 'Req_Gen_Real', 'OS WF': 'OS_WF',
-                'Km projeto executado': 'Km_Projeto_Executado', 'Projeto Executivo Plan': 'Projeto_Executivo_Plan',
-                'Projeto Executivo Real': 'Projeto_Executivo_Real', 'Data protocolo real': 'Data_Protocolo_Real',
-                'Licenciamento Plan': 'Licenciamento_Plan', 'Licenciamento Real': 'Licenciamento_Real',
-                'MOS Plan': 'MOS_Plan', 'MOS Real': 'MOS_Real', 'Swap Plan': 'Swap_Plan', 'Swap Real': 'Swap_Real',
-                'Km construído': 'Km_Construido', 'Construção Plan': 'Construcao_Total_Plan',
-                'Construção Parcial': 'Construcao_Parcial_Real', 'Construção Real': 'Construcao_Total_Real',
-                'RFI Plan': 'RFI_Plan', 'RFI Real': 'RFI_Real', 'Entroncado Plan': 'Entroncado_Plan',
-                'Entroncado Real': 'Entroncado_Real', 'Documentação Plan': 'Documentacao_Plan',
-                'Documentação Real': 'Documentacao_Real', 'GP Plan': 'GP_Plan', 'GP Real': 'GP_Real'
+                'capex': 'CAPEX', 'req_gen_plan': 'Req_Gen_Plan', 'req_gen_real': 'Req_Gen_Real',
+                'os_wf': 'OS_WF', 'km_projeto_executado': 'Km_Projeto_Executado',
+                'projeto_executivo_plan': 'Projeto_Executivo_Plan', 'projeto_executivo_real': 'Projeto_Executivo_Real',
+                'data_protocolo_real': 'Data_Protocolo_Real', 'licenciamento_plan': 'Licenciamento_Plan',
+                'licenciamento_real': 'Licenciamento_Real', 'mos_plan': 'MOS_Plan', 'mos_real': 'MOS_Real',
+                'swap_plan': 'Swap_Plan', 'swap_real': 'Swap_Real', 'km_construido': 'Km_Construido',
+                'construcao_plan': 'Construcao_Total_Plan', 'construcao_parcial': 'Construcao_Parcial_Real',
+                'construcao_real': 'Construcao_Total_Real', 'rfi_plan': 'RFI_Plan', 'rfi_real': 'RFI_Real',
+                'entroncado_plan': 'Entroncado_Plan', 'entroncado_real': 'Entroncado_Real',
+                'documentacao_plan': 'Documentacao_Plan', 'documentacao_real': 'Documentacao_Real',
+                'gp_plan': 'GP_Plan', 'gp_real': 'GP_Real'
             }
 
             for _, row in df.iterrows():
-                identificador = row.get('Identificador')
+                identificador = row.get('identificador')
                 if not identificador: continue
                 try:
                     projeto = Projeto.objects.get(Identificador=identificador)
@@ -123,10 +141,14 @@ def import_regional_view(request):
                     for nome_coluna, campo_modelo in mapeamento_colunas.items():
                         if nome_coluna in row and pd.notna(row[nome_coluna]):
                             valor = row[nome_coluna]
-                            if 'Plan' in campo_modelo or 'Real' in campo_modelo:
+                            
+                            if 'plan' in nome_coluna or 'real' in nome_coluna:
                                 valor_convertido = pd.to_datetime(valor, errors='coerce')
+                            elif 'km' in nome_coluna:
+                                valor_str = str(valor).replace(',', '.')
+                                valor_convertido = pd.to_numeric(valor_str, errors='coerce')
                             else:
-                                valor_convertido = pd.to_numeric(valor, errors='coerce')
+                                valor_convertido = str(valor).upper().replace('Ã', 'A')
                             
                             if pd.notna(valor_convertido):
                                 setattr(projeto, campo_modelo, valor_convertido)
@@ -179,18 +201,16 @@ def export_all_data_xls(request):
 
     # 3. Combina os dois conjuntos de dados de forma inteligente
     if not df_projetos.empty:
-        # Usa um 'merge' para juntar os dois dataframes, mantendo todos os projetos do PnFO
+        # Usa um 'merge' para juntar os dois dataframes.
         # O 'left' merge garante que todos os projetos da base PnFO são mantidos.
-        df_final = pd.merge(df_pnfo, df_projetos, on='Identificador', how='left', suffixes=('_pnfo', ''))
+        df_final = pd.merge(df_pnfo, df_projetos, on='Identificador', how='left', suffixes=('_base', '_atualizado'))
         
-        # Para cada coluna que existe em ambos, damos prioridade à versão atualizada (sem sufixo)
-        # e preenchemos os vazios com os dados do PnFO (_pnfo).
+        # Para cada coluna que existe em ambos, damos prioridade à versão atualizada
+        # e preenchemos os vazios com os dados da base.
         for col in df_pnfo.columns:
-            if col != 'Identificador' and f"{col}_pnfo" in df_final.columns:
-                # combine_first preenche os valores nulos em uma série com valores de outra
-                df_final[col] = df_final[col].combine_first(df_final[f"{col}_pnfo"])
-                # Remove a coluna duplicada do PnFO
-                df_final.drop(columns=[f"{col}_pnfo"], inplace=True)
+            if col != 'Identificador' and f"{col}_base" in df_final.columns:
+                df_final[col] = df_final[f"{col}_atualizado"].combine_first(df_final[f"{col}_base"])
+                df_final.drop(columns=[f"{col}_base", f"{col}_atualizado"], inplace=True)
     else:
         # Se não houver atualizações, a exportação é apenas a base do PnFO
         df_final = df_pnfo
