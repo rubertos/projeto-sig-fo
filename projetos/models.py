@@ -1,8 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-# --- SUA TABELA EXISTENTE (ESTÁ CORRETA) ---
 class Projeto(models.Model):
+    # Campos de Identificação (preenchidos pelo Admin via PnFO_geral)
     Identificador = models.CharField(max_length=100, primary_key=True, unique=True)
     Ano_Implantacao = models.IntegerField(null=True, blank=True)
     Regional = models.CharField(max_length=100, null=True, blank=True)
@@ -12,14 +12,16 @@ class Projeto(models.Model):
     Projeto_CAPEX = models.CharField(max_length=100, null=True, blank=True)
     Sub_Projeto_CAPEX = models.CharField(max_length=100, null=True, blank=True)
     SI_CAPEX = models.CharField(max_length=100, null=True, blank=True)
-    CAPEX = models.FloatField(null=True, blank=True)
+
+# Campos de Progresso (preenchidos pela Regional via ficheiro de atualização)
+    CAPEX = models.CharField(max_length=50, null=True, blank=True) # Alterado para CharField para "Sim/Não"
     OS_WF = models.CharField(max_length=100, null=True, blank=True)
     QUALIDADE_PREENCHIMENTO = models.CharField(max_length=50, null=True, blank=True)
-    
     Req_Gen_Plan = models.DateField(null=True, blank=True)
     Req_Gen_Real = models.DateField(null=True, blank=True)
     Projeto_Executivo_Plan = models.DateField(null=True, blank=True)
     Projeto_Executivo_Real = models.DateField(null=True, blank=True)
+    Data_Protocolo_Real = models.DateField(null=True, blank=True)
     Licenciamento_Plan = models.DateField(null=True, blank=True)
     Licenciamento_Real = models.DateField(null=True, blank=True)
     MOS_Plan = models.DateField(null=True, blank=True)
@@ -27,6 +29,7 @@ class Projeto(models.Model):
     Swap_Plan = models.DateField(null=True, blank=True)
     Swap_Real = models.DateField(null=True, blank=True)
     Construcao_Total_Plan = models.DateField(null=True, blank=True)
+    Construcao_Parcial_Real = models.DateField(null=True, blank=True)
     Construcao_Total_Real = models.DateField(null=True, blank=True)
     RFI_Plan = models.DateField(null=True, blank=True)
     RFI_Real = models.DateField(null=True, blank=True)
@@ -36,9 +39,6 @@ class Projeto(models.Model):
     Documentacao_Real = models.DateField(null=True, blank=True)
     GP_Plan = models.DateField(null=True, blank=True)
     GP_Real = models.DateField(null=True, blank=True)
-    Data_Protocolo_Real = models.DateField(null=True, blank=True)
-    Construcao_Parcial_Real = models.DateField(null=True, blank=True)
-
     Km_Projeto_Executado = models.FloatField(null=True, blank=True)
     Km_Construido = models.FloatField(null=True, blank=True)
 
